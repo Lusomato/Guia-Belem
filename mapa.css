@@ -1,0 +1,21 @@
+/* Estilos para o contêiner do mapa */
+#map-container {
+    margin: 0 auto; /* Centraliza horizontalmente */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+#tipoLocal{
+    margin-left: 600px;
+}
+h4 {
+    margin-left: 603px;
+}

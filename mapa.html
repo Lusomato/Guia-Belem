@@ -1,0 +1,126 @@
+<html>
+<head>
+    <title>Mostrar Localização no Mapa e Calcular Rota</title>
+    <style>
+        #map {
+            margin: 100px;
+            height: 500px;
+            width: auto;
+            text-align: center;}
+    </style>
+    <link rel="stylesheet" href="mapa.css">
+</head>
+<body>
+    
+    <div id="map"></div>
+    <select id="tipoLocal">
+        
+        <option value="local">Pontos turisticos</option>
+        <option value="restaurante">Restaurante</option>
+        
+    </select>
+    <select id="locais">
+        <option value="">Selecione um local</option>
+    </select>
+<div class="texto"> <h4>Selecione uma opção para o mapa aparecer</h4></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+
+    <script>
+        var map = null; // Variável para armazenar o objeto de mapa
+        var routingControl = null; // Variável para armazenar o controle de rota
+
+        function initMap(userLocation, destinationLocation) {
+            if (map) {
+                map.remove();
+            }
+            map = L.map('map').setView([userLocation.lat, userLocation.lng], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            var userMarker = L.marker([userLocation.lat, userLocation.lng]).addTo(map);
+            userMarker.bindPopup('Sua localização').openPopup();
+
+            var destinationMarker = L.marker([destinationLocation.lat, destinationLocation.lng]).addTo(map);
+            destinationMarker.bindPopup(destinationLocation.nome).openPopup();
+
+            routingControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(userLocation.lat, userLocation.lng),
+                    L.latLng(destinationLocation.lat, destinationLocation.lng)
+                ],
+                routeWhileDragging: true
+            }).addTo(map);
+        }
+
+        function getLocationAndInitMap() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    
+                    var tipoLocalSelect = document.getElementById('tipoLocal');
+                    var locaisSelect = document.getElementById('locais');
+
+                    tipoLocalSelect.addEventListener('change', function() {
+                        fetchLocais(locaisSelect);
+                    });
+
+                    document.getElementById('locais').addEventListener('change', function() {
+                        var selectedLocal = JSON.parse(this.value);
+                        if (selectedLocal) {
+                            updateMap(userLocation, selectedLocal);
+                        }
+                    });
+
+                    function fetchLocais(selectElement) {
+                        var tipoLocal = tipoLocalSelect.value;
+                        var arquivoJSON = tipoLocal === 'local' ? 'locais.json' : 'restaurantes.json';
+                        fetch(arquivoJSON)
+                            .then(response => response.json())
+                            .then(data => {
+                                // Remover todas as opções, exceto a primeira
+                                while (selectElement.options.length > 1) {
+                                    selectElement.remove(1);
+                                }
+                                // Adicionar novas opções
+                                data.forEach(local => {
+                                    var option = document.createElement('option');
+                                    option.text = local.nome;
+                                    option.value = JSON.stringify(local);
+                                    selectElement.add(option);
+                                });
+                            })
+                            .catch(error => console.error('Erro ao carregar locais:', error));
+                    }
+
+                    fetchLocais(locaisSelect); // Carregar locais ao carregar a página
+                }, function() {
+                    alert('Não foi possível obter a sua localização.');
+                });
+            } else {
+                alert('Geolocalização não é suportada pelo seu navegador.');
+            }
+        }
+
+        function updateMap(userLocation, destinationLocation) {
+            if (routingControl) {
+                routingControl.setWaypoints([
+                    L.latLng(userLocation.lat, userLocation.lng),
+                    L.latLng(destinationLocation.lat, destinationLocation.lng)
+                ]);
+            } else {
+                initMap(userLocation, destinationLocation);
+            }
+        }
+
+        getLocationAndInitMap();
+    </script>
+</body>
+</html>
